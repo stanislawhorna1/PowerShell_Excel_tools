@@ -14,9 +14,12 @@ for ($i = 0; $i -lt $Headers.Count; $i++) {
 $ind = Read-Host "Enter index of column which you would like to select: "
 $Column = $Headers[$ind]
 
-$csv | Sort-Object -Property $Column - 
+$csv | Sort-Object -Property $Column -Unique
 
 
+
+
+# Variables Removal #
 Remove-Variable filename 
 Remove-Variable csv
 Remove-Variable Headers 
