@@ -1,13 +1,13 @@
-Name,status
-PC-1,ok
-PC-2,not
-PC-3,not_found
-CIaasfWEDW,GOOD
-EUD028424,Maybe
-wiugnomwf,23091
-PC-1,ok
-PC-2,no signal
-PC-3,bad
-CIaasfWEDW,qqqqq
-EUD028424,ggggg
-wiugnomwf,gggggg
+Name,status,id
+PC-1,ok,12
+PC-2,not,10
+PC-3,not_found,8
+CIaasfWEDW,GOOD,9
+EUD028424,Maybe,5
+wiugnomwf,23091,4
+PC-1,ok,3
+PC-2,no signal,2
+PC-3,bad,1
+CIaasfWEDW,qqqqq,6
+EUD028424,ggggg,7
+wiugnomwf,gggggg,11
