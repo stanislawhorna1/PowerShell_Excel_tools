@@ -30,18 +30,18 @@ if ($decision -eq 0) {
         Write-Host "$i. $Column"
     }
     $ind = Read-Host "Select the column you want to use for sorting:"
-    $columnsort = $Headers[$ind]
+    $column_sort = $Headers[$ind]
     Write-Host ""
-    if ($columnsort.ToLower() -like "*time*" -or $columnsort.ToLower() -like "*date*") {
-        $csv = ($csv | Sort-Object { Get-Date $_.$columnsort } -Descending)
+    if ($column_sort.ToLower() -like "*time*" -or $column_sort.ToLower() -like "*date*") {
+        $csv = ($csv | Sort-Object { Get-Date $_.$column_sort } -Descending)
         #$csv | Format-Table
     }
-    elseif ($columnsort.ToLower() -eq "id" -or $columnsort.ToLower() -like "*num*") {
-        $csv = ($csv | Sort-Object { [int]$_.$columnsort })
+    elseif ($column_sort.ToLower() -eq "id" -or $column_sort.ToLower() -like "*num*") {
+        $csv = ($csv | Sort-Object { [int]$_.$column_sort })
         #$csv | Format-Table
     }
     else {
-        $csv = ($csv | Sort-Object -Property $columnsort)
+        $csv = ($csv | Sort-Object -Property $column_sort)
         # $csv | Format-Table
     }
     Remove-Variable Headers 
@@ -74,10 +74,10 @@ if ($decision -eq 0) {
         Write-Host "$i. $Column"
     }
     $ind = Read-Host "Select the column you want to use for deleting duplicated values:"
-    $Column = $Headers[$ind]
+    $column_remove_duplicates = $Headers[$ind]
     Write-Host ""
     Write-Host "$Column"
-    $csv = ($csv | Sort-Object $Column -Unique | Sort-Object $columnsort)
+    $csv = ($csv | Sort-Object $column_remove_duplicates -Unique | Sort-Object $column_sort)
     
 
     Remove-Variable Headers 
