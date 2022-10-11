@@ -30,24 +30,26 @@ if ($decision -eq 0) {
         Write-Host "$i. $Column"
     }
     $ind = Read-Host "Select the column you want to use for sorting:"
-    $Column = $Headers[$ind]
+    $columnsort = $Headers[$ind]
     Write-Host ""
-    if ($Column.ToLower() -like "*time*" -or $Column.ToLower() -like "*date*") {
-        $csv = ($csv | Sort-Object { Get-Date $_.$Column } -Descending)
+    if ($columnsort.ToLower() -like "*time*" -or $columnsort.ToLower() -like "*date*") {
+        $csv = ($csv | Sort-Object { Get-Date $_.$columnsort } -Descending)
         #$csv | Format-Table
     }
-    elseif ($Column.ToLower() -eq "id" -or $Column.ToLower() -like "*num*") {
-        $csv = ($csv | Sort-Object { [int]$_.$Column })
+    elseif ($columnsort.ToLower() -eq "id" -or $columnsort.ToLower() -like "*num*") {
+        $csv = ($csv | Sort-Object { [int]$_.$columnsort })
         #$csv | Format-Table
     }
     else {
-        $csv = ($csv | Sort-Object -Property $Column)
+        $csv = ($csv | Sort-Object -Property $columnsort)
         # $csv | Format-Table
     }
     Remove-Variable Headers 
     Remove-Variable Column
     Remove-Variable ind
 }
+
+$csv | Format-table
 Write-Host ""
 $title = 'Remove duplicates'
 $question = 'Would you like to remove dupicates?'
@@ -75,14 +77,16 @@ if ($decision -eq 0) {
     $Column = $Headers[$ind]
     Write-Host ""
     Write-Host "$Column"
-    # $csv = ($csv | Select-Object -property $Headers[$ind] -Unique)
+    $csv = ($csv | Sort-Object $Column -Unique | Sort-Object $columnsort)
+    
+
     Remove-Variable Headers 
     Remove-Variable Column
     Remove-Variable ind
 }
-$output_filename = Read-Host "Enter output file name: "
-Export-Csv -InputObject $csv -Path ./output/$output_filename
-
+# $output_filename = Read-Host "Enter output file name: "
+# Export-Csv -InputObject $csv -Path ./output/$output_filename
+$csv | Format-Table
 # Variables Removal #
 Remove-Variable filename
-Remove-Variable output_filename 
+#Remove-Variable output_filename 
