@@ -7,6 +7,17 @@ catch {
     exit 1
 }
 
+for (;;) {
+    
+
+
+
+
+
+
+    
+}
+
 
 $title = 'Sorting'
 $question = 'Would you like to sort input data?'
