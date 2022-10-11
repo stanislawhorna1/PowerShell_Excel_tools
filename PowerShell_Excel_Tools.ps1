@@ -136,6 +136,4 @@ for (; ; ) {
     }
 }
 
-$csv | Format-Table
-
 
