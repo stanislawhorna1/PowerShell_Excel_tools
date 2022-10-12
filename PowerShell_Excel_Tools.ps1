@@ -1,6 +1,6 @@
 $filename = Read-Host "Enter filename: "
 
-for (;;) {
+for (; ; ) {
     $title = 'Delimiter'
     $question = 'Select file type to import:'
     $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
@@ -49,28 +49,36 @@ for (; ; ) {
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Sorting', "Sort data"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Duplicates Removal', "Remove duplicated values based on selected column"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Replace', "Replace character or word in all table entries in selected column"))
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Filter', "Filter based on custom conditions applied for particular column"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit program"))
-    $decision = $Host.UI.PromptForChoice($title, $question, $choices, ($choices.Count - 1))
+    $menu_decision = $Host.UI.PromptForChoice($title, $question, $choices, ($choices.Count - 1))
     
     # /// DISPLAYING TABLE ///
-    if ($decision -eq 0) {
-        $title = 'Display'
-        $question = 'Do you want to display'
-        $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&First 10 entries', "Display first 10 table rows"))
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Last 10 entries', "Display last 10 table rows"))
-        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit program"))
-        $decision = $Host.UI.PromptForChoice($title, $question, $choices, 2)
+    if ($menu_decision -eq 0) {
+        $length = $csv.Length
+        Write-host ""
+        Write-host "Input table has $length lines"
+        if ($length -gt 10) {
+            $title = 'Display'
+            $question = 'Do you want to display'
+            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&First 10 entries', "Display first 10 table rows"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Last 10 entries', "Display last 10 table rows"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit program"))
+            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 2)
+        }
+        else {
+            $decision = 0
+        }
         if ($decision -eq 0) {
             $csv | Select-Object -First 10 | Format-table
         }
         if ($decision -eq 1) {
             $csv | Select-Object -Last 10 | Format-table
         }
-        $decision = ($choices.Count + 1)
     }
     # /// SORTING ///
-    if ($decision -eq 1) {
+    if ($menu_decision -eq 1) {
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -79,7 +87,7 @@ for (; ; ) {
             $Column = $Headers[$i]
             Write-Host "$i. $Column"
         }
-        $ind = Read-Host "Select the column you want to use for sorting:"
+        $ind = Read-Host "Select the column you want to use for sorting"
         $column_sort = $Headers[$ind]
         Write-Host ""
         if ($column_sort.ToLower() -like "*time*" -or $column_sort.ToLower() -like "*date*") {
@@ -97,10 +105,9 @@ for (; ; ) {
         Remove-Variable Headers 
         Remove-Variable Column
         Remove-Variable ind
-        $decision = ($choices.Count + 1)
     }
     # /// REMOVING DUPLICATES ///
-    if ($decision -eq 2) {
+    if ($menu_decision -eq 2) {
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -116,10 +123,9 @@ for (; ; ) {
         Remove-Variable Headers 
         Remove-Variable Column
         Remove-Variable ind
-        $decision = ($choices.Count + 1)
     }
     # /// REPLACE ///
-    if ($decision -eq 3) {
+    if ($menu_decision -eq 3) {
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -136,11 +142,69 @@ for (; ; ) {
         for ($i = 0; $i -lt $csv.Count; $i++) {
             $csv[$i].$column_replace = $csv[$i].$column_replace.Replace($old_str, $new_str)
         }
-        $decision = ($choices.Count + 1)
     }
-
+    # /// FILTER ///
+    if ($menu_decision -eq 4) {
+        $counter = 1
+        $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
+        Write-Host ""
+        Write-Host "Columns available in source file"
+        for ($i = 0; $i -lt $Headers.Count; $i++) {
+            $Column = $Headers[$i]
+            Write-Host "$i. $Column"
+        }
+        $ind = Read-Host "Select the column you want to use for filtering"
+        $column_filter = $Headers[$ind]
+        $title = 'Filtering Type'
+        $question = 'Do you want to filter column as a text or date?'
+        $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Text', "Sort as a string (* signs are allowed)"))
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Date', "Sort as date (After and before operators available)"))
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit program"))
+        $decision = $Host.UI.PromptForChoice($title, $question, $choices, 2)
+        if ($decision -eq 0) {
+            Write-Host "Remember to add * in a proper positions"
+            $condition = Read-Host "Enter the condition you would like to apply"
+            $csv = ($csv | Where-Object $column_filter -Like $condition)
+        }
+        elseif ($decision -eq 1) {
+            $year = Read-Host "Enter year which you would like to use as filter"
+            $title = 'Filtering Operator'
+            $question = 'Do you want to list all entries before or after selected date?'
+            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected year will be selected"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected year will be selected"))
+            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
+            if ($decision -eq 0) {
+                $title = 'Filtering Operator'
+            $question = 'Entered date should be included in selected entries?'
+            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
+            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+            if($decision -eq 0){
+                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -le $year })
+            }else{
+                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -lt $year })
+            }
+            }else{
+                $title = 'Filtering Operator'
+            $question = 'Entered date should be included in selected entries?'
+            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
+            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+            if($decision -eq 0){
+                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -ge $year })
+            }else{
+                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -gt $year })
+            }
+            }
+            
+        }
+    }
     # /// EXIT ///
-    if ($decision -eq ($choices.Count - 1)) {
+    if ($menu_decision -eq ($choices.Count - 1)) {
         if ($counter -ge 1) {
             $title = 'SAVE'
             $question = 'Do you want to save modified table?'
@@ -157,7 +221,7 @@ for (; ; ) {
                         exit 0
                     }
                     catch {
-                         {Provide correct output file name}
+                        { Provide correct output file name }
                     }
                 }
             }
