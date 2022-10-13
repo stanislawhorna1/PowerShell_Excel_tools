@@ -8,10 +8,14 @@ for (; ; ) {
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Standard csv file', "Standard csv file uses , as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Custom', "Define custom delimiter sign"))
     $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+    $type_nxql=0
     if ($decision -eq 0) {
         $delimiter = "`t"
+        $type_nxql=1
     }
     elseif ($decision -eq 1) {
+        #TO REMOVE
+        $type_nxql=1
         $delimiter = ","
     }
     else {
@@ -175,6 +179,12 @@ for (; ; ) {
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected year will be selected"))
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected year will be selected"))
             $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
+            if($type_nxql -eq 1){
+                for ($i = 0; $i -lt $csv.Count; $i++) {
+                    $csv[$i].$column_filter = ($csv[$i].$column_filter.Split("T")[0])
+                    $csv[$i].$column_filter = (Get-Date -Day $csv[$i].$column_filter.Split(".")[0] -Month $csv[$i].$column_filter.Split(".")[1] -Year $csv[$i].$column_filter.Split(".")[2])
+                }
+            }
             if ($decision -eq 0) {
                 $title = 'Filtering Operator'
             $question = 'Entered date should be included in selected entries?'
