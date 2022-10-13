@@ -8,14 +8,14 @@ for (; ; ) {
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Standard csv file', "Standard csv file uses , as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Custom', "Define custom delimiter sign"))
     $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-    $type_nxql=0
+    $type_nxql = 0
     if ($decision -eq 0) {
         $delimiter = "`t"
-        $type_nxql=1
+        $type_nxql = 1
     }
     elseif ($decision -eq 1) {
         #TO REMOVE
-        $type_nxql=1
+        $type_nxql = 1
         $delimiter = ","
     }
     else {
@@ -95,7 +95,11 @@ for (; ; ) {
         $column_sort = $Headers[$ind]
         Write-Host ""
         if ($column_sort.ToLower() -like "*time*" -or $column_sort.ToLower() -like "*date*") {
-            $csv = ($csv | Sort-Object { Get-Date $_.$column_sort } -Descending)
+            for ($i = 0; $i -lt $csv.Count; $i++) {
+        
+                $csv[$i].$column_sort = (Get-Date -Day ($csv[$i].$column_sort.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_sort.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_sort.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_sort.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_sort.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_sort.Split("T")[1]).Split(":")[2])
+            }
+            $csv = ($csv | Sort-Object -Property $column_sort -Descending)
             #$csv | Format-Table
         }
         elseif ($column_sort.ToLower() -eq "id" -or $column_sort.ToLower() -like "*num*") {
@@ -179,36 +183,38 @@ for (; ; ) {
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected year will be selected"))
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected year will be selected"))
             $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
-            if($type_nxql -eq 1){
+            if ($type_nxql -eq 1) {
                 for ($i = 0; $i -lt $csv.Count; $i++) {
-                    $csv[$i].$column_filter = ($csv[$i].$column_filter.Split("T")[0])
-                    $csv[$i].$column_filter = (Get-Date -Day $csv[$i].$column_filter.Split(".")[0] -Month $csv[$i].$column_filter.Split(".")[1] -Year $csv[$i].$column_filter.Split(".")[2])
+                    $csv[$i].$column_filter = (Get-Date -Day ($csv[$i].$column_filter.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_filter.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_filter.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_filter.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_filter.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_filter.Split("T")[1]).Split(":")[2])
                 }
             }
             if ($decision -eq 0) {
                 $title = 'Filtering Operator'
-            $question = 'Entered date should be included in selected entries?'
-            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
-            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-            if($decision -eq 0){
-                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -le $year })
-            }else{
-                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -lt $year })
+                $question = 'Entered date should be included in selected entries?'
+                $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+                $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
+                $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
+                $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+                if ($decision -eq 0) {
+                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -le $year })
+                }
+                else {
+                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -lt $year })
+                }
             }
-            }else{
+            else {
                 $title = 'Filtering Operator'
-            $question = 'Entered date should be included in selected entries?'
-            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
-            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-            if($decision -eq 0){
-                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -ge $year })
-            }else{
-                $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -gt $year })
-            }
+                $question = 'Entered date should be included in selected entries?'
+                $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+                $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Yes', "Year previously provided will be included in selection"))
+                $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
+                $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+                if ($decision -eq 0) {
+                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -ge $year })
+                }
+                else {
+                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -gt $year })
+                }
             }
             
         }
