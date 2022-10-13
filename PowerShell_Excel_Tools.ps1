@@ -1,3 +1,5 @@
+Clear-Host
+Write-Host ""
 $filename = Read-Host "Enter filename: "
 
 for (; ; ) {
@@ -7,15 +9,12 @@ for (; ; ) {
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&NXQL export', "Export from Nexthink uses ; as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Standard csv file', "Standard csv file uses , as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Custom', "Define custom delimiter sign"))
-    $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-    $type_nxql = 0
+    $decision = $Host.UI.PromptForChoice("", $question, $choices, 0)
+    
     if ($decision -eq 0) {
         $delimiter = "`t"
-        $type_nxql = 1
     }
     elseif ($decision -eq 1) {
-        #TO REMOVE
-        $type_nxql = 1
         $delimiter = ","
     }
     else {
@@ -28,7 +27,8 @@ for (; ; ) {
         { Impossible to read the file }
         exit 1
     }
-    if (($csv | Get-Member | Where-Object -Property MemberType -eq NoteProperty).count -le 1) {
+    $cols = (($csv | Get-Member | Where-Object -Property MemberType -eq NoteProperty).count)
+    if ($cols -le 1) {
         $title = 'Delimiter'
         $question = 'Only one column is imported, would you like to change delimiter?'
         $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
@@ -44,6 +44,11 @@ for (; ; ) {
     }
 }
 
+Clear-Host
+Write-Host ""
+Write-host " $cols columns imported"
+$rows = ($csv.Length)
+Write-host " $rows rows imported"
 $counter = 0
 for (; ; ) {
     $title = 'Function'
@@ -56,13 +61,13 @@ for (; ; ) {
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Filter', "Filter based on custom conditions applied for particular column"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit program"))
     $menu_decision = $Host.UI.PromptForChoice($title, $question, $choices, ($choices.Count - 1))
-    
+    Clear-Host
     # /// DISPLAYING TABLE ///
     if ($menu_decision -eq 0) {
-        $length = $csv.Length
+        $rows = $csv.Length
         Write-host ""
         Write-host "Input table has $length lines"
-        if ($length -gt 10) {
+        if ($rows -gt 10) {
             $title = 'Display'
             $question = 'Do you want to display'
             $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
@@ -83,6 +88,7 @@ for (; ; ) {
     }
     # /// SORTING ///
     if ($menu_decision -eq 1) {
+        Write-Host "SORTING"
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -94,21 +100,29 @@ for (; ; ) {
         $ind = Read-Host "Select the column you want to use for sorting"
         $column_sort = $Headers[$ind]
         Write-Host ""
-        if ($column_sort.ToLower() -like "*time*" -or $column_sort.ToLower() -like "*date*") {
+        $title = 'Sorting Type'
+        $question = 'Do you want to sort column as a text or date?'
+        $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Text', "Sort as a string (* signs are allowed)"))
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Number', "Sort as a number"))
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Date', "Sort as date"))
+        $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit function"))
+        $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
+        if ($decision -eq 0) {
+            $csv = ($csv | Sort-Object -Property $column_sort)
+        }
+        elseif ($decision -eq 1) {
+            $csv = ($csv | Sort-Object { [int]$_.$column_sort })
+        }
+        elseif ($decision -eq 2) {
+
+
+
+            
             for ($i = 0; $i -lt $csv.Count; $i++) {
-        
                 $csv[$i].$column_sort = (Get-Date -Day ($csv[$i].$column_sort.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_sort.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_sort.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_sort.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_sort.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_sort.Split("T")[1]).Split(":")[2])
             }
             $csv = ($csv | Sort-Object -Property $column_sort -Descending)
-            #$csv | Format-Table
-        }
-        elseif ($column_sort.ToLower() -eq "id" -or $column_sort.ToLower() -like "*num*") {
-            $csv = ($csv | Sort-Object { [int]$_.$column_sort })
-            #$csv | Format-Table
-        }
-        else {
-            $csv = ($csv | Sort-Object -Property $column_sort)
-            # $csv | Format-Table
         }
         Remove-Variable Headers 
         Remove-Variable Column
@@ -134,6 +148,7 @@ for (; ; ) {
     }
     # /// REPLACE ///
     if ($menu_decision -eq 3) {
+        Write-Host "REPLACING"
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -142,17 +157,18 @@ for (; ; ) {
             $Column = $Headers[$i]
             Write-Host "$i. $Column"
         }
-        
         $ind = Read-Host "Select the column you want to edit"
         $column_replace = $Headers[$ind]
+        write-host ""
         $old_str = Read-Host "Find what "
         $new_str = Read-Host "Replace with "
         for ($i = 0; $i -lt $csv.Count; $i++) {
             $csv[$i].$column_replace = $csv[$i].$column_replace.Replace($old_str, $new_str)
         }
     }
-    # /// FILTER ///
+    # /// FILTERING ///
     if ($menu_decision -eq 4) {
+        Write-Host "FILTERING"
         $counter = 1
         $Headers = (Get-Member -InputObject $csv[0] -MemberType NoteProperty).Name
         Write-Host ""
@@ -183,11 +199,11 @@ for (; ; ) {
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected year will be selected"))
             $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected year will be selected"))
             $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
-            if ($type_nxql -eq 1) {
-                for ($i = 0; $i -lt $csv.Count; $i++) {
-                    $csv[$i].$column_filter = (Get-Date -Day ($csv[$i].$column_filter.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_filter.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_filter.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_filter.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_filter.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_filter.Split("T")[1]).Split(":")[2])
-                }
+
+            for ($i = 0; $i -lt $csv.Count; $i++) {
+                $csv[$i].$column_filter = (Get-Date -Day ($csv[$i].$column_filter.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_filter.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_filter.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_filter.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_filter.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_filter.Split("T")[1]).Split(":")[2])
             }
+            
             if ($decision -eq 0) {
                 $title = 'Filtering Operator'
                 $question = 'Entered date should be included in selected entries?'
