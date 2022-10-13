@@ -4,12 +4,12 @@ for (; ; ) {
     $title = 'Delimiter'
     $question = 'Select file type to import:'
     $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Nexthink export', "Export from Nexthink uses ; as a delimiter"))
+    $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&NXQL export', "Export from Nexthink uses ; as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Standard csv file', "Standard csv file uses , as a delimiter"))
     $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Custom', "Define custom delimiter sign"))
     $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
     if ($decision -eq 0) {
-        $delimiter = ";"
+        $delimiter = "`t"
     }
     elseif ($decision -eq 1) {
         $delimiter = ","
