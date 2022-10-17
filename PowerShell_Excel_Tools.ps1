@@ -50,6 +50,11 @@ Write-host " $cols columns imported"
 $rows = ($csv.Length)
 Write-host " $rows rows imported"
 $counter = 0
+$date_conv_info = @{}
+for ($i = 0; $i -lt $cols; $i++) {
+    $date_conv_info[$i]=0
+}
+
 for (; ; ) {
     $title = 'Function'
     $question = 'Select function:'
@@ -115,19 +120,14 @@ for (; ; ) {
             $csv = ($csv | Sort-Object { [int]$_.$column_sort })
         }
         elseif ($decision -eq 2) {
-            $title = 'date format'
-            $question = 'Enter date format'
-            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&EU', "dd.mm.yyyyThh:mm:ss)"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&US', "MM/DD/YYYY - not developed yet"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit function"))
-            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-            if($decision -eq 0){
+            
+            if (($date_conv_info[$ind]) -eq 0) {
                 for ($i = 0; $i -lt $csv.Count; $i++) {
                     $csv[$i].$column_sort = (Get-Date -Day ($csv[$i].$column_sort.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_sort.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_sort.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_sort.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_sort.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_sort.Split("T")[1]).Split(":")[2])
                 }
-                $csv = ($csv | Sort-Object -Property $column_sort -Descending)
-            } 
+                $date_conv_info[$ind] = 1
+            }
+            $csv = ($csv | Sort-Object -Property $column_sort -Descending)
         }
         Remove-Variable Headers 
         Remove-Variable Column
@@ -197,24 +197,19 @@ for (; ; ) {
             $csv = ($csv | Where-Object $column_filter -Like $condition)
         }
         elseif ($decision -eq 1) {
-            $title = 'date format'
-            $question = 'Enter date format'
-            $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&EU', "dd.mm.yyyyThh:mm:ss)"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&US', "MM/DD/YYYY - not developed yet"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Quit', "Quit function"))
-            $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
-            if($decision -eq 0){
+            if (($date_conv_info[$ind]) -eq 0) {
                 for ($i = 0; $i -lt $csv.Count; $i++) {
                     $csv[$i].$column_filter = (Get-Date -Day ($csv[$i].$column_filter.Split("T")[0]).Split(".")[0] -Month ($csv[$i].$column_filter.Split("T")[0]).Split(".")[1] -Year ($csv[$i].$column_filter.Split("T")[0]).Split(".")[2] -Hour ($csv[$i].$column_filter.Split("T")[1]).Split(":")[0] -Minute ($csv[$i].$column_filter.Split("T")[1]).Split(":")[1] -Second ($csv[$i].$column_filter.Split("T")[1]).Split(":")[2])
                 }
-            } 
-            $year = Read-Host "Enter year which you would like to use as filter"
+                $date_conv_info[$ind] = 1
+            }
+            $Date = Read-Host "Enter Date in format (DD.MM.YYYY)"
+            $Date = (Get-Date -Day ($Date.Split(".")[0]) -Month ($Date.Split(".")[1]) -Year ($Date.Split(".")[2]))
             $title = 'Filtering Operator'
             $question = 'Do you want to list all entries before or after selected date?'
             $choices = New-Object Collections.ObjectModel.Collection[Management.Automation.Host.ChoiceDescription]
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected year will be selected"))
-            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected year will be selected"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&Before', "All entries before selected Date will be selected"))
+            $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&After', "All entries after selected Date will be selected"))
             $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
             
             if ($decision -eq 0) {
@@ -225,10 +220,10 @@ for (; ; ) {
                 $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
                 $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
                 if ($decision -eq 0) {
-                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -le $year })
+                    $csv = ($csv | where-object { $_.$column_filter -le $Date })
                 }
                 else {
-                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -lt $year })
+                    $csv = ($csv | where-object { $_.$column_filter -lt $Date })
                 }
             }
             else {
@@ -239,10 +234,10 @@ for (; ; ) {
                 $choices.Add((New-Object Management.Automation.Host.ChoiceDescription -ArgumentList '&No', "Year previously provided will be excluded from selection"))
                 $decision = $Host.UI.PromptForChoice($title, $question, $choices, 0)
                 if ($decision -eq 0) {
-                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -ge $year })
+                    $csv = ($csv | where-object { $_.$column_filter -ge $Date })
                 }
                 else {
-                    $csv = ($csv | where-object { (Get-Date $_.$column_filter -Format yyyy) -gt $year })
+                    $csv = ($csv | where-object { $_.$column_filter -gt $Date })
                 }
             }
             
